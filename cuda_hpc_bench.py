@@ -1057,8 +1057,8 @@ def bench_tensor_core_gemm(
         a = randn(backend, (n, n), dtype)
         b = randn(backend, (n, n), dtype)
         out = zeros(backend, (n, n), dtype)
-        def fn():
-          matmul(backend, a, b, out=out)
+        def fn(_out=out, _backend=backend, _a=a, _b=b):
+          matmul(_backend, _a, _b, out=_out)
         sec = measure_gpu_seconds(backend, fn, repeat)
         tflops = 2 * n * n * n / sec / 1e12
 
@@ -1257,4 +1257,5 @@ if __name__ == "__main__":
     except RuntimeError as exc:
         print(f"[error] {exc}", file=sys.stderr)
         sys.exit(1)
+
 
