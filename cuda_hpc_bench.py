@@ -24,13 +24,11 @@ from __future__ import annotations
 import argparse
 import ctypes
 import hashlib
-import math
 import os
 import platform
 import shutil
 import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -801,7 +799,8 @@ def bench_bandwidth(backend: Backend, n: int, repeat: int) -> Tuple[float, str]:
         torch = backend.lib
         x = torch.randn(n, device="cuda", dtype=torch.float32)
         y = torch.empty_like(x)
-        fn = lambda: y.copy_(x)
+        def fn():
+            y.copy_(x)
     else:
         cp = backend.lib
         x = cp.random.random(n, dtype=cp.float32)
@@ -819,7 +818,8 @@ def bench_bandwidth(backend: Backend, n: int, repeat: int) -> Tuple[float, str]:
         )
         threads = 256
         blocks = (n + threads - 1) // threads
-        fn = lambda: copy_kernel((blocks,), (threads,), (x, y, n))
+        def fn():
+            copy_kernel((blocks,), (threads,), (x, y, n))
 
     sec = measure_gpu_seconds(backend, fn, repeat, warmup=3)
     bytes_total = 2 * n * 4
@@ -1057,7 +1057,8 @@ def bench_tensor_core_gemm(
         a = randn(backend, (n, n), dtype)
         b = randn(backend, (n, n), dtype)
         out = zeros(backend, (n, n), dtype)
-        fn = lambda: matmul(backend, a, b, out=out)
+        def fn():
+            matmul(backend, a, b, out=out)
         sec = measure_gpu_seconds(backend, fn, repeat)
         tflops = 2 * n * n * n / sec / 1e12
 
@@ -1256,3 +1257,4 @@ if __name__ == "__main__":
     except RuntimeError as exc:
         print(f"[error] {exc}", file=sys.stderr)
         sys.exit(1)
+
