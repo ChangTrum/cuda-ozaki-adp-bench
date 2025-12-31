@@ -198,7 +198,8 @@ class CUDABenchmark:
         cp.cuda.Stream.null.synchronize()
         elapsed = time.perf_counter() - start
 
-        # Approximate FLOPS for SVD
+        # Approximate FLOPS for SVD (based on QR decomposition algorithm)
+        # Complexity: O(4mn² + 8n³) for m×n matrix
         flops = 4 * m * n**2 + 8 * n**3
         gflops = (flops / elapsed) / 1e9
 
