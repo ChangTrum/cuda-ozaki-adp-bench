@@ -123,13 +123,13 @@ class CUDABenchmark:
         A = cp.random.randn(size, size).astype(np.float64)
         B = cp.random.randn(size, size).astype(np.float64)
 
-        # Warmup
+        # Warmup (result intentionally discarded)
         _ = cp.matmul(A, B)
         cp.cuda.Stream.null.synchronize()
 
         # Benchmark with higher precision accumulation
         start = time.perf_counter()
-        _ = cp.matmul(A, B)
+        _ = cp.matmul(A, B)  # Result discarded - only timing the operation
         cp.cuda.Stream.null.synchronize()
         elapsed = time.perf_counter() - start
 
