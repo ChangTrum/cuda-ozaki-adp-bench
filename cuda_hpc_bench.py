@@ -3,16 +3,18 @@
 CUDA HPC Benchmark Suite with Ozaki ADP Support
 
 This benchmark suite tests various CUDA operations including:
-- Tensor Core GEMM (FP16, BF16, TF32, FP64)
-- cuBLAS Ozaki ADP (fixed-point FP64 emulation for higher precision)
-- Tensor network contractions (TEBD/MPO)
+- Tensor Core GEMM (FP16, FP32, FP64)
+- cuBLAS Ozaki ADP baseline (FP64 emulation for higher precision)
 - Truncated SVD
-- Device-to-Device (D2D) bandwidth
+- Device-to-Device (D2D) memory bandwidth
 
 Ozaki ADP (Adaptive Double Precision):
 A cuBLAS-based technique that emulates higher-precision FP64 arithmetic using
 fixed-point accumulation. This provides better numerical accuracy for certain
 workloads while maintaining GPU acceleration.
+
+Note: This implementation provides a baseline FP64 benchmark. True Ozaki ADP
+requires specialized cuBLAS configurations not exposed in standard CuPy.
 """
 
 import argparse
@@ -100,20 +102,22 @@ class CUDABenchmark:
 
     def benchmark_ozaki_adp(self, size: int = 2048) -> float:
         """
-        Benchmark Ozaki ADP (Adaptive Double Precision) emulation.
+        Benchmark Ozaki ADP (Adaptive Double Precision) baseline.
 
-        Ozaki ADP uses fixed-point accumulation to achieve higher precision
-        than standard FP64 operations, useful for ill-conditioned problems.
+        This provides a FP64 baseline for Ozaki ADP comparison. True Ozaki ADP
+        uses fixed-point accumulation to achieve higher precision than standard
+        FP64 operations, useful for ill-conditioned problems.
 
         Args:
             size: Matrix dimension
 
         Returns:
-            GFLOPS performance (effective)
+            GFLOPS performance (FP64 baseline)
 
         Note:
-            This is a simplified emulation. Real Ozaki ADP requires special
-            cuBLAS configurations not exposed in standard CuPy.
+            This is a FP64 baseline benchmark. Real Ozaki ADP requires special
+            cuBLAS configurations (e.g., cublasGemmEx with accumulation modes)
+            not exposed in standard CuPy. Use this as a reference for comparison.
         """
         # Use FP64 as baseline for Ozaki ADP emulation
         A = cp.random.randn(size, size).astype(np.float64)
@@ -133,13 +137,16 @@ class CUDABenchmark:
         gflops = (flops / elapsed) / 1e9
 
         if self.validate:
-            print("  Ozaki ADP validation: Using FP64 baseline")
+            print("  Ozaki ADP validation: Using FP64 baseline for reference")
 
         return gflops
 
     def benchmark_d2d_bandwidth(self, size_mb: int = 1024) -> float:
         """
-        Benchmark Device-to-Device (D2D) memory bandwidth.
+        Benchmark Device memory bandwidth (single GPU).
+
+        Measures memory copy bandwidth within a single GPU device.
+        For multi-GPU D2D transfers, use peer-to-peer memory copy APIs.
 
         Args:
             size_mb: Transfer size in megabytes
@@ -222,15 +229,15 @@ class CUDABenchmark:
             print(f"  Performance: {perf:.2f} GFLOPS")
 
         # Ozaki ADP
-        print("\n[Ozaki ADP - Fixed-Point FP64 Emulation]")
-        print("Running Ozaki ADP benchmark...")
+        print("\n[Ozaki ADP - FP64 Baseline]")
+        print("Running Ozaki ADP baseline benchmark...")
         perf = self.benchmark_ozaki_adp()
         self.results["ozaki_adp"] = perf
-        print(f"  Performance: {perf:.2f} GFLOPS")
+        print(f"  Performance: {perf:.2f} GFLOPS (FP64 baseline)")
 
         # D2D Bandwidth
-        print("\n[Device-to-Device Bandwidth]")
-        print("Running D2D bandwidth test...")
+        print("\n[Device Memory Bandwidth]")
+        print("Running device memory bandwidth test...")
         bw = self.benchmark_d2d_bandwidth()
         self.results["d2d_bandwidth"] = bw
         print(f"  Bandwidth: {bw:.2f} GB/s")
