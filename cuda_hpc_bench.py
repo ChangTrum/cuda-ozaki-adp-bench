@@ -311,8 +311,16 @@ Ozaki ADP Information:
         print("Error: CUDA is not available on this system")
         sys.exit(1)
 
-    print(f"CUDA Version: {cp.cuda.runtime.runtimeGetVersion()}")
-    print(f"Device: {cp.cuda.Device().name}")
+    try:
+        # Format CUDA version from integer (e.g., 12000 -> "12.0")
+        cuda_version = cp.cuda.runtime.runtimeGetVersion()
+        cuda_major = cuda_version // 1000
+        cuda_minor = (cuda_version % 1000) // 10
+        print(f"CUDA Version: {cuda_major}.{cuda_minor}")
+        print(f"Device: {cp.cuda.Device().name}")
+    except Exception as e:
+        print(f"Warning: Could not retrieve CUDA device info: {e}")
+
     print(f"Validation: {'Enabled' if args.validate else 'Disabled'}")
 
     bench = CUDABenchmark(validate=args.validate)
@@ -328,12 +336,15 @@ Ozaki ADP Information:
         perf = bench.benchmark_ozaki_adp(size=args.size)
         print(f"Performance: {perf:.2f} GFLOPS")
     elif args.benchmark == "svd":
-        print("Running SVD benchmark...")
-        perf = bench.benchmark_svd()
+        print(f"Running SVD benchmark (size={args.size})...")
+        # Use size for both m and n dimensions
+        perf = bench.benchmark_svd(m=args.size, n=args.size // 2)
         print(f"Performance: {perf:.2f} GFLOPS")
     elif args.benchmark == "d2d":
         print("Running D2D bandwidth test...")
-        bw = bench.benchmark_d2d_bandwidth()
+        # Convert size to MB (default is matrix elements, convert to approximate MB)
+        size_mb = max(1, (args.size * args.size * 4) // (1024 * 1024))
+        bw = bench.benchmark_d2d_bandwidth(size_mb=size_mb)
         print(f"Bandwidth: {bw:.2f} GB/s")
 
 
